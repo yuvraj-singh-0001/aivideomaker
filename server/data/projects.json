@@ -1,1 +1,94 @@
-[]
+[
+  {
+    "id": "proj-1792651149553",
+    "title": "THE MAGIC STAR AND THE LITTLE ROBOT",
+    "genre": "Horror Story",
+    "genreId": "horror",
+    "styleId": "3d",
+    "aspectRatio": "16:9",
+    "voiceLang": "hi-IN",
+    "createdAt": "2026-10-22T06:39:09.553Z",
+    "updatedAt": "2026-10-22T06:39:27.706Z",
+    "story": "TITLE: THE MAGIC STAR AND THE LITTLE ROBOT\nCreate a high-quality 3D Pixar-style animated short film with emotional storytelling, cinematic lighting, realistic camera movements, and a heartwarming ending.\n\nVIDEO STYLE:\n3D Pixar Disney animation, warm golden lighting, expressive animated eyes, soft volumetric fog, rich colors, 16:9 widescreen composition, natural Hindi voiceover and character dialogues.\n\nCHARACTER 1 — TINKU THE ROBOT:\nA small, cute metallic robot with big glowing blue round eyes, two small antenna ears that wiggle, and a tiny solar chest light. He is curious, kind-hearted, and loves exploring.\n\nCHARACTER 2 — CHIPPI THE SQUIRREL:\nA playful golden-brown forest squirrel with a fluffy tail, wearing a tiny red leaf as a hat. She is fast, energetic, and Tinku's best friend.\n\nSCENE 1: THE SUNRISE DISCOVERY\nExtreme Wide Aerial Shot gliding across a magical vibrant green forest at golden sunrise. Tinku the little robot walks through the glowing dew drops, looking around with wonder.\nHindi Narration:\n\"एक सुंदर जादुई जंगल में टिंकू नाम का एक नन्हा रोबोट रहता था, जो हर सुबह नए चमत्कारों की तलाश में निकलता था।\"\n\nSCENE 2: THE FALLEN GLOWING STAR\nSlow Tracking Movement Shot through the forest trees. Tinku and Chippi find a small, glowing golden star trapped under thick thorny branches near a crystal stream.\nChippi says:\n\"टिंकू देखो! आसमान का एक छोटा सितारा नीचे गिर गया है और दर्द में रो रहा है!\"\n\nSCENE 3: THE BRAVE EFFORT\nDramatic Close-Up Shot focusing on Tinku's expressive glowing eyes. Tinku extends his little robotic arms, carefully bending the sharp thorns to free the glowing star while sparks gently fly.\nTinku says:\n\"घबराओ मत नन्हे सितारे, मैं तुम्हें इस कांटेदार झाड़ी से बाहर निकालूँगा!\"\n\nSCENE 4: THE MAGICAL ASCENT\nDynamic Low-Angle Shot looking upward. The freed golden star starts floating into the air, spinning with bright rainbow sparkles, lighting up the entire forest and reflecting in Tinku's happy eyes.\nHindi Narration:\n\"आज़ाद होते ही वह सितारा खुशी से जगमगाने लगा और पूरा जंगल रोशनी से भर उठा।\"\n\nSCENE 5: THE SUNSET FAREWELL\nGrand Cinematic Pull-Back Ending Shot. Tinku and Chippi stand together on a cliff holding hands, watching the little star fly back into the evening night sky among the moon and constellations.\nHindi Narration:\n\"टिंकू समझ गया कि जब हम दूसरों की मदद करते हैं, तो सच्ची रोशनी हमारे अपने दिल में चमक उठती है।\"",
+    "characters": [
+      {
+        "id": "char-1",
+        "name": "TINKU THE ROBOT",
+        "role": "protagonist",
+        "description": "A small, cute metallic robot with big glowing blue round eyes, two small antenna ears that wiggle, and a tiny solar chest light. He is curious, kind-hearted, and loves exploring.",
+        "voiceGender": "male",
+        "voiceVoice": "hi-IN-MadhurNeural",
+        "avatar": "https://api.dicebear.com/7.x/adventurer/svg?seed=TINKU%20THE%20ROBOT&backgroundColor=b6e3f4,c0aede,d1d4f9"
+      },
+      {
+        "id": "char-2",
+        "name": "CHIPPI THE SQUIRREL",
+        "role": "co-star",
+        "description": "A playful golden-brown forest squirrel with a fluffy tail, wearing a tiny red leaf as a hat. She is fast, energetic, and Tinku's best friend. SCENE 1: THE SUNRISE DISCOVERY Extreme Wide Aerial Shot gliding across a magical vibrant green forest at golden sunrise. Tinku the little robot walks through the glowing dew drops, looking around with wonder. Hindi Narration: \"एक सुंदर जादुई जंगल में टिंकू नाम का एक नन्हा रोबोट रहता था, जो हर सुबह नए चमत्कारों की तलाश में निकलता था।\" SCENE 2: THE FALLEN GLOWING STAR Slow Tracking Movement Shot through the forest trees. Tinku and Chippi find a small, glowing golden star trapped under thick thorny branches near a crystal stream. Chippi says: \"टिंकू देखो! आसमान का एक छोटा सितारा नीचे गिर गया है और दर्द में रो रहा है!\" SCENE 3: THE BRAVE EFFORT Dramatic Close-Up Shot focusing on Tinku's expressive glowing eyes. Tinku extends his little robotic arms, carefully bending the sharp thorns to free the glowing star while sparks gently fly. Tinku says: \"घबराओ मत नन्हे सितारे, मैं तुम्हें इस कांटेदार झाड़ी से बाहर निकालूँगा!\" SCENE 4: THE MAGICAL ASCENT Dynamic Low-Angle Shot looking upward. The freed golden star starts floating into the air, spinning with bright rainbow sparkles, lighting up the entire forest and reflecting in Tinku's happy eyes. Hindi Narration: \"आज़ाद होते ही वह सितारा खुशी से जगमगाने लगा और पूरा जंगल रोशनी से भर उठा।\" SCENE 5: THE SUNSET FAREWELL Grand Cinematic Pull-Back Ending Shot. Tinku and Chippi stand together on a cliff holding hands, watching the little star fly back into the evening night sky among the moon and constellations. Hindi Narration: \"टिंकू समझ गया कि जब हम दूसरों की मदद करते हैं, तो सच्ची रोशनी हमारे अपने दिल में चमक उठती है।\"",
+        "voiceGender": "female",
+        "voiceVoice": "hi-IN-SwaraNeural",
+        "avatar": "https://api.dicebear.com/7.x/adventurer/svg?seed=CHIPPI%20THE%20SQUIRREL&backgroundColor=b6e3f4,c0aede,d1d4f9"
+      }
+    ],
+    "scenes": [
+      {
+        "id": "scene-srv-1",
+        "sceneNumber": 1,
+        "title": "VIDEO STYLE",
+        "scriptText": "3D Pixar Disney animation, warm golden lighting, expressive animated eyes, soft volumetric fog, rich colors, 16:9 widescreen composition, natural Hindi voiceover and character dialogues.",
+        "speaker": "TINKU THE ROBOT",
+        "voiceover": "3D Pixar Disney animation, warm golden lighting, expressive animated eyes, soft volumetric fog, rich colors, 16:9 widescreen composition, natural Hindi voiceover and character dialogues.",
+        "cameraAngle": "Extreme Wide Aerial Shot",
+        "cameraDescription": "Vast overhead view establishing geography, scale and mood",
+        "lighting": "Warm cinematic sunlight with volumetric atmospheric depth",
+        "emotion": "Curiosity & Wonder",
+        "sfx": "Cinematic orchestral swell with environmental soundscapes",
+        "duration": 6.5,
+        "visualPrompt": "3D Pixar Disney animation, warm golden lighting, expressive animated eyes, soft volumetric 3d animation",
+        "seed": 589939,
+        "imageUrl": "https://imgproxy.attic.sh/insecure/f:webp/q:90/w:2048/plain/https://attic.sh/ckzg7352c54d8as3joj9roagbms7",
+        "backupUrl": "https://imgproxy.attic.sh/insecure/f:webp/q:90/w:2048/plain/https://attic.sh/ckzg7352c54d8as3joj9roagbms7",
+        "motionType": "zoom-in"
+      },
+      {
+        "id": "scene-srv-2",
+        "sceneNumber": 2,
+        "title": "CHARACTER 1 — TINKU THE ROBOT",
+        "scriptText": "A small, cute metallic robot with big glowing blue round eyes, two small antenna ears that wiggle, and a tiny solar chest light. He is curious, kind-hearted, and loves exploring.",
+        "speaker": "CHIPPI THE SQUIRREL",
+        "voiceover": "A small, cute metallic robot with big glowing blue round eyes, two small antenna ears that wiggle, and a tiny solar chest light.",
+        "cameraAngle": "Side-Tracking Movement Shot",
+        "cameraDescription": "Camera smoothly glides beside character tracking movement",
+        "lighting": "Warm cinematic sunlight with volumetric atmospheric depth",
+        "emotion": "Heartfelt Resolution",
+        "sfx": "Cinematic orchestral swell with environmental soundscapes",
+        "duration": 6.5,
+        "visualPrompt": "A small, cute metallic robot with big glowing blue round eyes, two small antenna ears that 3d animation",
+        "seed": 882084,
+        "imageUrl": "https://img.freepik.com/premium-photo/adorable-blue-robot-buddy-with-antenna-glowing-eyes_309199-18130.jpg",
+        "backupUrl": "https://img.freepik.com/premium-photo/adorable-blue-robot-buddy-with-antenna-glowing-eyes_309199-18130.jpg",
+        "motionType": "pan-right"
+      },
+      {
+        "id": "scene-srv-3",
+        "sceneNumber": 3,
+        "title": "CHARACTER 2 — CHIPPI THE SQUIRREL",
+        "scriptText": "A playful golden-brown forest squirrel with a fluffy tail, wearing a tiny red leaf as a hat. She is fast, energetic, and Tinku's best friend.\n\nSCENE 1: THE SUNRISE DISCOVERY\nExtreme Wide Aerial Shot gliding across a magical vibrant green forest at golden sunrise. Tinku the little robot walks through the glowing dew drops, looking around with wonder.\nHindi Narration:\n\"एक सुंदर जादुई जंगल में टिंकू नाम का एक नन्हा रोबोट रहता था, जो हर सुबह नए चमत्कारों की तलाश में निकलता था।\"\n\nSCENE 2: THE FALLEN GLOWING STAR\nSlow Tracking Movement Shot through the forest trees. Tinku and Chippi find a small, glowing golden star trapped under thick thorny branches near a crystal stream.\nChippi says:\n\"टिंकू देखो! आसमान का एक छोटा सितारा नीचे गिर गया है और दर्द में रो रहा है!\"\n\nSCENE 3: THE BRAVE EFFORT\nDramatic Close-Up Shot focusing on Tinku's expressive glowing eyes. Tinku extends his little robotic arms, carefully bending the sharp thorns to free the glowing star while sparks gently fly.\nTinku says:\n\"घबराओ मत नन्हे सितारे, मैं तुम्हें इस कांटेदार झाड़ी से बाहर निकालूँगा!\"\n\nSCENE 4: THE MAGICAL ASCENT\nDynamic Low-Angle Shot looking upward. The freed golden star starts floating into the air, spinning with bright rainbow sparkles, lighting up the entire forest and reflecting in Tinku's happy eyes.\nHindi Narration:\n\"आज़ाद होते ही वह सितारा खुशी से जगमगाने लगा और पूरा जंगल रोशनी से भर उठा।\"\n\nSCENE 5: THE SUNSET FAREWELL\nGrand Cinematic Pull-Back Ending Shot. Tinku and Chippi stand together on a cliff holding hands, watching the little star fly back into the evening night sky among the moon and constellations.\nHindi Narration:\n\"टिंकू समझ गया कि जब हम दूसरों की मदद करते हैं, तो सच्ची रोशनी हमारे अपने दिल में चमक उठती है।\"",
+        "speaker": "Hindi Narration",
+        "voiceover": "एक सुंदर जादुई जंगल में टिंकू नाम का एक नन्हा रोबोट रहता था, जो हर सुबह नए चमत्कारों की तलाश में निकलता था।",
+        "cameraAngle": "Slow Push-In Dramatic Close-Up",
+        "cameraDescription": "Tension and emotional focus drawing viewers into character eyes",
+        "lighting": "Warm cinematic sunlight with volumetric atmospheric depth",
+        "emotion": "High Tension & Mystery",
+        "sfx": "Cinematic orchestral swell with environmental soundscapes",
+        "duration": 6.5,
+        "visualPrompt": "A playful golden-brown forest squirrel with a fluffy tail, wearing a tiny red leaf as a ha 3d animation",
+        "seed": 871066,
+        "imageUrl": "https://img.freepik.com/premium-photo/squirrel-with-red-tail-that-has-brown-tail_724865-2239.jpg",
+        "backupUrl": "https://img.freepik.com/premium-photo/squirrel-with-red-tail-that-has-brown-tail_724865-2239.jpg",
+        "motionType": "zoom-out"
+      }
+    ],
+    "videoFormat": "cartoon"
+  }
+]
