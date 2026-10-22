@@ -321,6 +321,39 @@ const GENRE_BACKUPS = {
   ]
 };
 
+// Curated 100% Free moving video clips by format (Option 2)
+export const CURATED_MOTION_VIDEOS = {
+  cartoon: [
+    'https://upload.wikimedia.org/wikipedia/commons/d/d1/Stop_motion_Robot_Animation.webm',
+    'https://upload.wikimedia.org/wikipedia/commons/8/82/Glass_Half_-_3D_animation_with_3D_printing.webm',
+    'https://upload.wikimedia.org/wikipedia/commons/2/20/2016-10_time-lapse_Aberfeldy_sunrise.webm',
+    'https://upload.wikimedia.org/wikipedia/commons/e/e2/A_Galaxy_Grouping.webm',
+    'https://upload.wikimedia.org/wikipedia/commons/c/c4/Cosumnes_River_Preserve_%282016%29.webm'
+  ],
+  scifi: [
+    'https://upload.wikimedia.org/wikipedia/commons/e/ed/Alexander_Gerst%E2%80%99s_Earth_timelapses_%282017_reissue%29.webm',
+    'https://upload.wikimedia.org/wikipedia/commons/e/e2/A_Galaxy_Grouping.webm',
+    'https://upload.wikimedia.org/wikipedia/commons/8/82/Glass_Half_-_3D_animation_with_3D_printing.webm',
+    'https://upload.wikimedia.org/wikipedia/commons/d/d1/Stop_motion_Robot_Animation.webm'
+  ],
+  movie: [
+    'https://upload.wikimedia.org/wikipedia/commons/c/c4/Cosumnes_River_Preserve_%282016%29.webm',
+    'https://upload.wikimedia.org/wikipedia/commons/2/20/2016-10_time-lapse_Aberfeldy_sunrise.webm',
+    'https://upload.wikimedia.org/wikipedia/commons/4/49/Nature_montage_around_Aberfeldy.webm',
+    'https://upload.wikimedia.org/wikipedia/commons/a/a6/PIO06_Ovcarsko-Kablarska_Klisura.webm',
+    'https://upload.wikimedia.org/wikipedia/commons/5/59/PIO06_Stepenice_od_Mahovine_Ovcarsko-Kablarska_Klisura.webm'
+  ],
+  news: [
+    'https://upload.wikimedia.org/wikipedia/commons/e/ed/Alexander_Gerst%E2%80%99s_Earth_timelapses_%282017_reissue%29.webm',
+    'https://upload.wikimedia.org/wikipedia/commons/8/82/Glass_Half_-_3D_animation_with_3D_printing.webm'
+  ],
+  documentary: [
+    'https://upload.wikimedia.org/wikipedia/commons/c/c4/Cosumnes_River_Preserve_%282016%29.webm',
+    'https://upload.wikimedia.org/wikipedia/commons/4/49/Nature_montage_around_Aberfeldy.webm',
+    'https://upload.wikimedia.org/wikipedia/commons/2/20/2016-10_time-lapse_Aberfeldy_sunrise.webm'
+  ]
+};
+
 // Universal Dynamic Screenplay Director: Works for ANY prompt
 export function parseMasterScreenplay(text) {
   const clean = (text || '').trim();
@@ -331,19 +364,34 @@ export function parseMasterScreenplay(text) {
   const storyStart = clean.search(/STORY\s*:/i);
   const storyBody = storyStart !== -1 ? clean.slice(storyStart + 6) : clean;
 
-  // Extract explicit sections if available
-  const sectionHeaderRegex = /\n\s*([A-Z0-9\s—'-]{3,35}):\s*\n/g;
-  const sections = [];
+  // 1. Detect explicit SCENE 1, SCENE 2, or UPPERCASE scene headers
+  const sceneRegex = /(?:^|\n)\s*(SCENE\s*\d+[^:\n]*:?[^\n]*)/gi;
   const headerMatches = [];
   let headerMatch;
 
-  while ((headerMatch = sectionHeaderRegex.exec(storyBody)) !== null) {
+  while ((headerMatch = sceneRegex.exec(storyBody)) !== null) {
     headerMatches.push({
       header: headerMatch[1].trim(),
       index: headerMatch.index,
       length: headerMatch[0].length
     });
   }
+
+  // If no SCENE 1 tags found, try standard section headers
+  if (headerMatches.length < 2) {
+    const genericHeaderRegex = /\n\s*([A-Z0-9\s—'-]{3,35}):/g;
+    while ((headerMatch = genericHeaderRegex.exec(storyBody)) !== null) {
+      if (!/ANIMATION REQUIREMENTS|NEGATIVE PROMPT|VISUAL CONSISTENCY|VIDEO STYLE|CHARACTER/i.test(headerMatch[1])) {
+        headerMatches.push({
+          header: headerMatch[1].trim(),
+          index: headerMatch.index,
+          length: headerMatch[0].length
+        });
+      }
+    }
+  }
+
+  const sections = [];
 
   if (headerMatches.length >= 2) {
     for (let i = 0; i < headerMatches.length; i++) {
@@ -353,30 +401,30 @@ export function parseMasterScreenplay(text) {
       const endIndex = next ? next.index : storyBody.length;
       const content = storyBody.slice(startIndex, endIndex).trim();
 
-      if (!/ANIMATION REQUIREMENTS|NEGATIVE PROMPT|VISUAL CONSISTENCY/i.test(current.header)) {
+      if (!/ANIMATION REQUIREMENTS|NEGATIVE PROMPT|VISUAL CONSISTENCY|VIDEO STYLE/i.test(current.header)) {
         sections.push({ header: current.header, content });
       }
     }
   } else {
-    // If no uppercase headers, check paragraphs
+    // Check paragraphs
     const paragraphs = storyBody
       .split(/\n\s*\n/)
       .map(p => p.trim())
-      .filter(p => p.length > 20 && !/ANIMATION REQUIREMENTS|NEGATIVE PROMPT/i.test(p));
+      .filter(p => p.length > 20 && !/ANIMATION REQUIREMENTS|NEGATIVE PROMPT|VIDEO STYLE|CHARACTER/i.test(p));
 
     if (paragraphs.length >= 3) {
       paragraphs.forEach((p, idx) => {
-        sections.push({ header: `Scene ${idx + 1}: Story Beat`, content: p });
+        sections.push({ header: `Shot ${idx + 1}: Story Beat`, content: p });
       });
     } else {
-      // Dynamic clause-based scene division from the user's actual prompt
+      // Dynamic clause-based scene division from prompt
       const clauses = clean
         .split(/(?:[।.\n!?]|,\s*(?:aur|par|tabhi|jahan|lekin|and|but|when|suddenly|while)\s+)/i)
         .map(c => c.trim().replace(/^[-*•\d.)\s]+/, ''))
         .filter(c => c.length > 5);
 
       if (clauses.length >= 3) {
-        clauses.slice(0, 6).forEach((clause, idx) => {
+        clauses.slice(0, 8).forEach((clause, idx) => {
           sections.push({
             header: `Shot ${idx + 1}: Progression`,
             content: clause
@@ -385,12 +433,12 @@ export function parseMasterScreenplay(text) {
       } else {
         const core = clauses[0] || clean;
         sections.push({
-          header: 'Shot 1: Establishing Cinema Frame',
+          header: 'Shot 1: Opening Cinema Frame',
           content: core
         });
         sections.push({
           header: 'Shot 2: Dramatic Focus & Action',
-          content: `${core} - camera moves closer to capture the unfolding details.`
+          content: `${core} - unfolding action and details.`
         });
         sections.push({
           header: 'Shot 3: Key Emotional Turning Point',
@@ -398,7 +446,7 @@ export function parseMasterScreenplay(text) {
         });
         sections.push({
           header: 'Shot 4: Grand Cinematic Resolution',
-          content: `${core} - camera pulls back into an unforgettable cinematic finale.`
+          content: `${core} - unforgettable cinematic finale.`
         });
       }
     }
@@ -414,39 +462,64 @@ export function parseMasterScreenplay(text) {
 
   const styleToken = CINEMATIC_STYLES.find(s => s.id === style)?.promptToken || CINEMATIC_STYLES[0].promptToken;
   const backupList = GENRE_BACKUPS[format] || GENRE_BACKUPS.movie;
+  const videoList = CURATED_MOTION_VIDEOS[format] || CURATED_MOTION_VIDEOS.movie;
 
   const parsedScenes = sections.map((sec, idx) => {
-    const sectionText = sec.content;
+    const rawContent = sec.content;
     let dialogue = '';
-    let speaker = characters[idx % characters.length]?.name || 'narrator';
+    let speaker = characters[idx % characters.length]?.name || 'Narrator';
 
-    // Parse Character Dialogue from text: "X says: “...”" or quotes
-    const charDialogueMatch = sectionText.match(/([A-Za-z0-9\s—]+?)\s*(?:says|speaks|shouts|roars|whispers|cries|kehta hai|boli)?\s*:\s*[“"']([^”"'\n]+)[”"']/i);
-    if (charDialogueMatch) {
-      speaker = charDialogueMatch[1].replace(/says|speaks|shouts|roars|whispers|cries|kehta hai|boli/gi, '').trim();
-      dialogue = charDialogueMatch[2].trim();
+    // 1. Extract Spoken Dialogue & Narration (NEVER read technical camera directions aloud)
+    const speeches = [];
+    const speechRegex = /(?:(?:Hindi\s+)?Narration\s*:|([A-Za-z0-9\s—]+?)\s*(?:says|speaks|shouts|whispers|cries|kehta hai|boli)\s*:)\s*[\r\n\s]*[“"']([^”"']+)[\r\n\s]*[”"']/gi;
+    let sm;
+    while ((sm = speechRegex.exec(rawContent)) !== null) {
+      const spk = sm[1] ? sm[1].trim() : 'Narrator';
+      const line = sm[2].trim().replace(/\s+/g, ' ');
+      speeches.push({ speaker: spk, line });
+    }
+
+    if (speeches.length > 0) {
+      speaker = speeches[0].speaker;
+      dialogue = speeches.map(s => (s.speaker !== 'Narrator' && speeches.length > 1) ? `${s.speaker}: "${s.line}"` : s.line).join(' ');
     } else {
-      const quoteMatch = sectionText.match(/[“"']([^”"'\n]{5,200})[”"']/);
+      // 2. Look for quotes anywhere in the block
+      const quoteMatch = rawContent.match(/[“"']([^”"']{4,350})[”"']/);
       if (quoteMatch) {
-        dialogue = quoteMatch[1].trim();
+        dialogue = quoteMatch[1].trim().replace(/\s+/g, ' ');
       } else {
-        const sentences = sectionText.split(/(?<=[.।\n])/).map(s => s.trim()).filter(s => s.length > 5);
-        dialogue = sentences[0] || sectionText.slice(0, 110);
+        // 3. Fallback to clean story text, stripping out camera directions
+        const cleanScript = rawContent
+          .replace(/(?:Camera Angle|Lighting|Action|SFX|Audio|Visual Prompt|Mood|Shot)\s*:[^\n]*/gi, '')
+          .replace(/(?:Extreme Wide Aerial Shot|Slow Tracking Movement Shot|Dramatic Close-Up|Dynamic Low-Angle|Grand Cinematic Pull-Back|Close-Up|Medium Shot|Aerial Shot)[^\n.]*[.\n]?/gi, '')
+          .trim();
+        const sentences = cleanScript.split(/(?<=[.।\n])/).map(s => s.trim()).filter(s => s.length > 5);
+        dialogue = sentences[0] || cleanScript.slice(0, 140);
       }
     }
 
-    const angle = cameraAngles[idx % cameraAngles.length];
+    // Detect camera angle mentioned in text, or use preset sequence
+    const angleMatch = rawContent.match(/(Extreme Wide Aerial Shot|Slow Tracking Movement Shot|Dramatic Close-Up|Dynamic Low-Angle|Grand Cinematic Pull-Back|Close-Up|Medium Shot|Aerial Shot|POV Shot|Drone Shot)/i);
+    const angle = angleMatch 
+      ? { type: angleMatch[1], desc: 'Dynamic camera cinematography' } 
+      : cameraAngles[idx % cameraAngles.length];
+
     const motionType = idx % 4 === 0 ? 'zoom-in' : idx % 4 === 1 ? 'pan-right' : idx % 4 === 2 ? 'zoom-out' : 'pan-left';
 
-    const visualPrompt = `${angle.type}, ${sec.header}. In the scene: ${sectionText.slice(0, 150)}. ${styleToken}, masterpiece, highly detailed, 8k render`;
+    const visualPrompt = `${angle.type}, ${sec.header}. Scene details: ${rawContent.slice(0, 150)}. ${styleToken}, masterpiece, 8k render`;
     const seed = Math.floor(Math.random() * 899999) + 100000;
     const resolvedUrl = backupList[idx % backupList.length];
+    const resolvedVideoUrl = videoList[idx % videoList.length];
+
+    // Duration scaled for natural speech: 8.5s - 22s per shot for full cinematic length
+    const wordCount = dialogue.split(/\s+/).filter(Boolean).length;
+    const duration = Math.max(8.0, Math.min(25.0, wordCount * 0.5 + 4.0));
 
     return {
       id: `scene-dynamic-${idx + 1}`,
       sceneNumber: idx + 1,
       title: sec.header.replace(/^[A-Z0-9\s—'-]+:\s*/, '').trim() || `Shot ${idx + 1}`,
-      scriptText: sectionText,
+      scriptText: rawContent,
       speaker: speaker,
       voiceover: dialogue,
       cameraAngle: angle.type,
@@ -454,11 +527,12 @@ export function parseMasterScreenplay(text) {
       lighting: 'Warm cinematic sunlight with volumetric atmospheric depth',
       emotion: idx === 0 ? 'Curiosity & Wonder' : idx === 2 ? 'High Tension & Mystery' : idx === 3 ? 'Peak Climax' : 'Heartfelt Resolution',
       sfx: 'Cinematic orchestral swell with environmental soundscapes',
-      duration: Math.max(4.2, Math.min(6.5, dialogue.split(/\s+/).length * 0.35 + 2.0)),
+      duration: duration,
       visualPrompt: visualPrompt,
       seed: seed,
       imageUrl: resolvedUrl,
       backupUrl: resolvedUrl,
+      videoUrl: resolvedVideoUrl,
       motionType: motionType
     };
   });

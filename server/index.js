@@ -20,7 +20,7 @@ require('dotenv').config();
 
 const { synthesizeSpeech, getAvailableVoices, resolveVoice } = require('./services/neuralVoice');
 const db = require('./services/db');
-const { getVideoEngineSpecs } = require('./services/videoBridge');
+const { getVideoEngineSpecs, VIDEO_ENGINES, resolveSceneVideo, generateVideoClip } = require('./services/videoBridge');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -354,21 +354,36 @@ app.post('/api/decompose-story', async (req, res) => {
       ? reqChars 
       : extractServerCharacters(cleanText, finalFormat);
 
-    // Section Extraction
+    // Section Extraction: 1. Explicit SCENE 1, SCENE 2, or UPPERCASE scene headers
     const storyStart = cleanText.search(/STORY\s*:/i);
     const storyBody = storyStart !== -1 ? cleanText.slice(storyStart + 6) : cleanText;
-    const sectionHeaderRegex = /\n\s*([A-Z0-9\s—'-]{3,35}):\s*\n/g;
-    const sections = [];
+    const sceneRegex = /(?:^|\n)\s*(SCENE\s*\d+[^:\n]*:?[^\n]*)/gi;
     const headerMatches = [];
     let headerMatch;
 
-    while ((headerMatch = sectionHeaderRegex.exec(storyBody)) !== null) {
+    while ((headerMatch = sceneRegex.exec(storyBody)) !== null) {
       headerMatches.push({
         header: headerMatch[1].trim(),
         index: headerMatch.index,
         length: headerMatch[0].length
       });
     }
+
+    // Fallback to standard uppercase headers if fewer than 2 scene tags found
+    if (headerMatches.length < 2) {
+      const genericHeaderRegex = /\n\s*([A-Z0-9\s—'-]{3,35}):/g;
+      while ((headerMatch = genericHeaderRegex.exec(storyBody)) !== null) {
+        if (!/ANIMATION REQUIREMENTS|NEGATIVE PROMPT|VISUAL CONSISTENCY|VIDEO STYLE|CHARACTER/i.test(headerMatch[1])) {
+          headerMatches.push({
+            header: headerMatch[1].trim(),
+            index: headerMatch.index,
+            length: headerMatch[0].length
+          });
+        }
+      }
+    }
+
+    const sections = [];
 
     if (headerMatches.length >= 2) {
       for (let i = 0; i < headerMatches.length; i++) {
@@ -377,7 +392,7 @@ app.post('/api/decompose-story', async (req, res) => {
         const startIndex = current.index + current.length;
         const endIndex = next ? next.index : storyBody.length;
         const content = storyBody.slice(startIndex, endIndex).trim();
-        if (!/ANIMATION REQUIREMENTS|NEGATIVE PROMPT|VISUAL CONSISTENCY/i.test(current.header)) {
+        if (!/ANIMATION REQUIREMENTS|NEGATIVE PROMPT|VISUAL CONSISTENCY|VIDEO STYLE/i.test(current.header)) {
           sections.push({ header: current.header, content });
         }
       }
@@ -385,11 +400,11 @@ app.post('/api/decompose-story', async (req, res) => {
       const paragraphs = storyBody
         .split(/\n\s*\n/)
         .map(p => p.trim())
-        .filter(p => p.length > 20 && !/ANIMATION REQUIREMENTS|NEGATIVE PROMPT/i.test(p));
+        .filter(p => p.length > 20 && !/ANIMATION REQUIREMENTS|NEGATIVE PROMPT|VIDEO STYLE|CHARACTER/i.test(p));
 
       if (paragraphs.length >= 3) {
         paragraphs.forEach((p, idx) => {
-          sections.push({ header: `Scene ${idx + 1}: Story Beat`, content: p });
+          sections.push({ header: `Shot ${idx + 1}: Story Beat`, content: p });
         });
       } else {
         // Dynamic clause-based scene division from the user's actual prompt
@@ -399,7 +414,7 @@ app.post('/api/decompose-story', async (req, res) => {
           .filter(c => c.length > 5);
 
         if (clauses.length >= 3) {
-          clauses.slice(0, 6).forEach((clause, idx) => {
+          clauses.slice(0, 8).forEach((clause, idx) => {
             sections.push({
               header: `Shot ${idx + 1}: Progression`,
               content: clause
@@ -409,7 +424,7 @@ app.post('/api/decompose-story', async (req, res) => {
           // Break into 4 cinematic camera movements describing the prompt's scene
           const core = clauses[0] || cleanText;
           sections.push({
-            header: 'Shot 1: Establishing Cinema Frame',
+            header: 'Shot 1: Opening Cinema Frame',
             content: core
           });
           sections.push({
@@ -436,32 +451,60 @@ app.post('/api/decompose-story', async (req, res) => {
       { type: 'Grand Pull-Back Ending Shot', desc: 'Slow cinematic crane withdrawal leaving characters in vast landscape' }
     ];
 
-    // Build scenes and dynamically resolve real web visual images for each scene
+    // Build scenes and dynamically resolve real web visual images AND real moving video clips for each scene
     const scenes = await Promise.all(sections.map(async (sec, idx) => {
       const sectionText = sec.content;
       let dialogue = '';
-      let speaker = characters[idx % characters.length]?.name || 'narrator';
+      let speaker = characters[idx % characters.length]?.name || 'Narrator';
 
-      const charDialogueMatch = sectionText.match(/([A-Za-z0-9\s—]+?)\s*(?:says|speaks|shouts|roars|whispers|cries|kehta hai|boli)?\s*:\s*[“"']([^”"'\n]+)[”"']/i);
-      if (charDialogueMatch) {
-        speaker = charDialogueMatch[1].replace(/says|speaks|shouts|roars|whispers|cries|kehta hai|boli/gi, '').trim();
-        dialogue = charDialogueMatch[2].trim();
+      // 1. Extract Spoken Dialogue & Narration (NEVER read technical camera directions aloud)
+      const speeches = [];
+      const speechRegex = /(?:(?:Hindi\s+)?Narration\s*:|([A-Za-z0-9\s—]+?)\s*(?:says|speaks|shouts|whispers|cries|kehta hai|boli)\s*:)\s*[\r\n\s]*[“"']([^”"']+)[\r\n\s]*[”"']/gi;
+      let sm;
+      while ((sm = speechRegex.exec(sectionText)) !== null) {
+        const spk = sm[1] ? sm[1].trim() : 'Narrator';
+        const line = sm[2].trim().replace(/\s+/g, ' ');
+        speeches.push({ speaker: spk, line });
+      }
+
+      if (speeches.length > 0) {
+        speaker = speeches[0].speaker;
+        dialogue = speeches.map(s => (s.speaker !== 'Narrator' && speeches.length > 1) ? `${s.speaker}: "${s.line}"` : s.line).join(' ');
       } else {
-        const quoteMatch = sectionText.match(/[“"']([^”"'\n]{5,200})[”"']/);
+        // Fallback: quotes anywhere in text
+        const quoteMatch = sectionText.match(/[“"']([^”"']{4,350})[”"']/);
         if (quoteMatch) {
-          dialogue = quoteMatch[1].trim();
+          dialogue = quoteMatch[1].trim().replace(/\s+/g, ' ');
         } else {
-          const sentences = sectionText.split(/(?<=[.।\n])/).map(s => s.trim()).filter(s => s.length > 5);
-          dialogue = sentences[0] || sectionText.slice(0, 110);
+          // Fallback: strip technical camera, lighting, audio, visual prompt keywords
+          let cleanScript = sectionText
+            .replace(/(?:Camera Angle|Lighting|Action|SFX|Audio|Visual Prompt|Mood|Shot)\s*:[^\n]*/gi, '')
+            .replace(/(?:Extreme Wide Aerial Shot|Slow Tracking Movement Shot|Dramatic Close-Up|Dynamic Low-Angle|Grand Cinematic Pull-Back|Close-Up|Medium Shot|Aerial Shot)[^\n.]*[.\n]?/gi, '')
+            .trim();
+          dialogue = cleanScript.split(/[।.\n!?]/).map(s => s.trim()).filter(s => s.length > 5)[0] || cleanScript.slice(0, 140);
         }
       }
 
-      const angle = cameraAngles[idx % cameraAngles.length];
+      // Detect camera angle mentioned in text or assign standard progression
+      const angleMatch = sectionText.match(/(Extreme Wide Aerial Shot|Slow Tracking Movement Shot|Dramatic Close-Up|Dynamic Low-Angle|Grand Cinematic Pull-Back|Close-Up|Medium Shot|Aerial Shot|POV Shot|Drone Shot)/i);
+      const angle = angleMatch 
+        ? { type: angleMatch[1], desc: 'Dynamic camera cinematography' } 
+        : cameraAngles[idx % cameraAngles.length];
+
       const motionType = idx % 4 === 0 ? 'zoom-in' : idx % 4 === 1 ? 'pan-right' : idx % 4 === 2 ? 'zoom-out' : 'pan-left';
 
       // Visual search query derived from the prompt
       const visualQuery = `${sectionText.slice(0, 90)} ${finalFormat === 'cartoon' ? '3d animation' : 'cinematic film'}`;
-      const resolvedImage = await searchWebVisual(visualQuery, finalFormat);
+      
+      // Parallel fetch: High-Res visual fallback + Real Moving Video Clip (Option 2)
+      const [resolvedImage, movingVideoUrl] = await Promise.all([
+        searchWebVisual(visualQuery, finalFormat),
+        resolveSceneVideo(sectionText, finalFormat, idx)
+      ]);
+
+      // Duration scaled realistically for Hindi narration & character voice: 8.5s - 22s per shot
+      const wordCount = dialogue.split(/\s+/).filter(Boolean).length;
+      const duration = Math.max(8.0, Math.min(25.0, wordCount * 0.5 + 4.0));
 
       return {
         id: `scene-srv-${idx + 1}`,
@@ -475,11 +518,12 @@ app.post('/api/decompose-story', async (req, res) => {
         lighting: 'Warm cinematic sunlight with volumetric atmospheric depth',
         emotion: idx === 0 ? 'Curiosity & Wonder' : idx === 2 ? 'High Tension & Mystery' : idx === 3 ? 'Peak Climax' : 'Heartfelt Resolution',
         sfx: 'Cinematic orchestral swell with environmental soundscapes',
-        duration: Math.max(4.2, Math.min(6.5, dialogue.split(/\s+/).length * 0.35 + 2.0)),
+        duration: duration,
         visualPrompt: visualQuery,
         seed: Math.floor(Math.random() * 899999) + 100000,
         imageUrl: resolvedImage,
         backupUrl: resolvedImage,
+        videoUrl: movingVideoUrl,
         motionType: motionType
       };
     }));
@@ -492,12 +536,34 @@ app.post('/api/decompose-story', async (req, res) => {
       genreId: finalGenre,
       characters: characters,
       totalScenes: scenes.length,
-      estimatedDuration: scenes.reduce((acc, s) => acc + s.duration, 0),
+      estimatedDuration: Math.round(scenes.reduce((acc, s) => acc + s.duration, 0)),
       scenes: scenes
     });
   } catch (err) {
     console.error('Decompose Error:', err);
     res.status(500).json({ error: 'Failed to decompose story', message: err.message });
+  }
+});
+
+// ============================================================================
+// VIDEO ENGINE SETTINGS & CLIP GENERATION ENDPOINTS (Option 2)
+// ============================================================================
+app.get('/api/video-engine/specs', (req, res) => {
+  res.json({
+    success: true,
+    activeEngine: 'hybrid',
+    engines: VIDEO_ENGINES
+  });
+});
+
+app.post('/api/video-engine/generate-clip', async (req, res) => {
+  try {
+    const { prompt, duration = 5, mode = 'hybrid', apiKey = '', format = 'movie', sceneIndex = 0 } = req.body;
+    const clipResult = await generateVideoClip({ prompt, duration, mode, apiKey, format, sceneIndex });
+    res.json(clipResult);
+  } catch (err) {
+    console.error('Video generation error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

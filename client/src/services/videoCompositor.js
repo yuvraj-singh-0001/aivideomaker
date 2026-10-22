@@ -17,6 +17,8 @@ export class VideoCompositor {
     this.isPlaying = false;
     this.animationFrameId = null;
     this.imagesCache = new Map();
+    this.videosCache = new Map();
+    this.activeVideo = null;
     this.onSceneChange = null;
     this.onPlaybackEnd = null;
     this.subtitlesEnabled = true;
@@ -96,11 +98,11 @@ export class VideoCompositor {
     return words;
   }
 
-  // Pre-load all scene images into GPU memory with multi-tier fallback and timeout
+  // Pre-load all scene images and real moving video clips into memory
   async preloadScenes(scenes) {
     this.scenes = scenes;
     const promises = scenes.map(scene => {
-      return new Promise((resolve) => {
+      const imgPromise = new Promise((resolve) => {
         const cacheKey = scene.imageUrl || scene.id;
         if (this.imagesCache.has(cacheKey)) {
           resolve(this.imagesCache.get(cacheKey));
@@ -131,7 +133,6 @@ export class VideoCompositor {
               }
             };
             img.onerror = () => {
-              // Try without crossOrigin flag
               const img2 = new Image();
               img2.onload = () => {
                 if (!settled) {
@@ -167,7 +168,6 @@ export class VideoCompositor {
             resolve(img);
           })
           .catch(() => {
-            // Try backupUrl if primary failed/timed out
             if (targetBackup && targetBackup !== targetPrimary) {
               return loadImageWithTimeout(targetBackup, 3500)
                 .then(backupImg => {
@@ -183,6 +183,55 @@ export class VideoCompositor {
             resolve(fallback);
           });
       });
+
+      // Also preload moving video clip if available (Option 2)
+      const vidPromise = new Promise((resolve) => {
+        if (!scene.videoUrl || this.videosCache.has(scene.id)) {
+          resolve(this.videosCache.get(scene.id) || null);
+          return;
+        }
+
+        try {
+          const video = document.createElement('video');
+          video.crossOrigin = 'anonymous';
+          video.muted = true;
+          video.playsInline = true;
+          video.loop = true;
+          video.preload = 'auto';
+
+          let settled = false;
+          const timer = setTimeout(() => {
+            if (!settled) {
+              settled = true;
+              resolve(null);
+            }
+          }, 4000);
+
+          video.onloadeddata = () => {
+            if (!settled) {
+              settled = true;
+              clearTimeout(timer);
+              this.videosCache.set(scene.id, video);
+              resolve(video);
+            }
+          };
+
+          video.onerror = () => {
+            if (!settled) {
+              settled = true;
+              clearTimeout(timer);
+              resolve(null);
+            }
+          };
+
+          video.src = scene.videoUrl;
+          video.load();
+        } catch (e) {
+          resolve(null);
+        }
+      });
+
+      return Promise.all([imgPromise, vidPromise]);
     });
 
     await Promise.all(promises);
@@ -255,6 +304,21 @@ export class VideoCompositor {
 
     const scene = this.scenes[this.currentSceneIndex];
     if (this.onSceneChange) this.onSceneChange(this.currentSceneIndex);
+
+    // Option 2: Real moving video playback
+    if (this.activeVideo && this.activeVideo !== this.videosCache.get(scene.id)) {
+      try { this.activeVideo.pause(); } catch(e) {}
+    }
+    const currentVid = this.videosCache.get(scene.id);
+    if (currentVid) {
+      this.activeVideo = currentVid;
+      try {
+        currentVid.currentTime = 0;
+        currentVid.play().catch(() => {});
+      } catch(e) {}
+    } else {
+      this.activeVideo = null;
+    }
 
     const fullText = (scene.voiceover || scene.scriptText || '').trim();
     this.currentSubtitles = fullText;
@@ -361,10 +425,10 @@ export class VideoCompositor {
     const swayX = Math.sin(timestamp * 0.0014) * 3.8;
     const swayY = Math.cos(timestamp * 0.0018) * 2.5;
 
-    // 1. Draw Current Scene Image with smooth Ken Burns Motion
+    // 1. Draw Current Scene Image with smooth Ken Burns Motion or Real Moving Video
     const currentImg = this.imagesCache.get(scene.imageUrl);
     if (currentImg) {
-      this._renderSingleSceneLayer(currentImg, scene.motionType || 'zoom-in', progress, swayX, swayY, 1.0);
+      this._renderSingleSceneLayer(currentImg, scene.motionType || 'zoom-in', progress, swayX, swayY, 1.0, scene.id);
     }
 
     // 2. Dissolve Next Scene during the 0.4s buffer
@@ -375,7 +439,7 @@ export class VideoCompositor {
 
       if (nextImg) {
         const smoothAlpha = transitionAlpha * transitionAlpha * (3.0 - 2.0 * transitionAlpha);
-        this._renderSingleSceneLayer(nextImg, nextScene.motionType || 'pan-right', 0.05, -swayX * 0.5, -swayY * 0.5, smoothAlpha);
+        this._renderSingleSceneLayer(nextImg, nextScene.motionType || 'pan-right', 0.05, -swayX * 0.5, -swayY * 0.5, smoothAlpha, nextScene.id);
       }
     }
 
@@ -621,8 +685,8 @@ export class VideoCompositor {
     this.ctx.restore();
   }
 
-  // Draw single image layer with Ken Burns scale/pan
-  _renderSingleSceneLayer(img, motionType, progress, swayX, swayY, alpha = 1.0) {
+  // Draw single image or moving video layer with Ken Burns scale/pan
+  _renderSingleSceneLayer(img, motionType, progress, swayX, swayY, alpha = 1.0, sceneId = null) {
     if (!this.ctx || !this.canvas) return;
     const w = this.canvas.width;
     const h = this.canvas.height;
@@ -650,7 +714,17 @@ export class VideoCompositor {
 
     this.ctx.translate(w / 2 + transX, h / 2 + transY);
     this.ctx.scale(scale, scale);
-    this.ctx.drawImage(img, -w / 2, -h / 2, w, h);
+
+    // Option 2: Render live moving video clip if ready and loaded
+    let media = img;
+    if (sceneId && this.videosCache.has(sceneId)) {
+      const vid = this.videosCache.get(sceneId);
+      if (vid && vid.readyState >= 2) {
+        media = vid;
+      }
+    }
+
+    this.ctx.drawImage(media, -w / 2, -h / 2, w, h);
     this.ctx.restore();
   }
 
@@ -698,6 +772,10 @@ export class VideoCompositor {
     }
     voiceEngine.stop();
     audioEngine.stopScore();
+    this.videosCache.forEach(v => {
+      try { v.pause(); } catch(e) {}
+    });
+    this.activeVideo = null;
   }
 
   pause() {
@@ -707,9 +785,12 @@ export class VideoCompositor {
       this.animationFrameId = null;
     }
     voiceEngine.stop();
+    this.videosCache.forEach(v => {
+      try { v.pause(); } catch(e) {}
+    });
   }
 
-  // Render & Export MP4 video file
+  // Render & Export MP4 video file (Fast Accelerated Offline Rendering + Watchdog)
   async exportVideo(onProgress = null, mood = 'horror') {
     if (!this.canvas || this.scenes.length === 0) return null;
 
@@ -732,23 +813,38 @@ export class VideoCompositor {
 
       const chunks = [];
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
+        if (e.data && e.data.size > 0) chunks.push(e.data);
       };
 
-      recorder.onstop = () => {
+      let resolved = false;
+      const finishExport = () => {
+        if (resolved) return;
+        resolved = true;
         const blob = new Blob(chunks, { type: mimeType });
         const videoUrl = URL.createObjectURL(blob);
         resolve({ blob, url: videoUrl, isMp4: mimeType.includes('mp4') });
       };
 
-      recorder.start();
+      recorder.onstop = finishExport;
+
+      // Start recording with 200ms timeslice to ensure continuous data gathering
+      recorder.start(200);
 
       let sceneIdx = 0;
       const totalScenes = this.scenes.length;
 
       const renderNextScene = () => {
         if (sceneIdx >= totalScenes) {
-          recorder.stop();
+          try {
+            if (recorder.state === 'recording') {
+              recorder.requestData();
+              recorder.stop();
+            } else {
+              finishExport();
+            }
+          } catch(e) {
+            finishExport();
+          }
           return;
         }
 
@@ -762,25 +858,28 @@ export class VideoCompositor {
         const speechDurationSec = voiceEngine.estimateDuration(fullText, 0.95);
         const totalSceneDurationSec = speechDurationSec + 0.4;
         const sceneStartTime = performance.now();
+        // Accelerated export speed (2x) so exporting a 60s video takes only 30s
+        const exportSpeedMultiplier = 2.0;
 
         const step = (now) => {
-          const elapsed = (now - sceneStartTime) / 1000;
-          const progress = Math.min(1.0, elapsed / totalSceneDurationSec);
+          const rawElapsed = (now - sceneStartTime) / 1000;
+          const simulatedElapsed = rawElapsed * exportSpeedMultiplier;
+          const progress = Math.min(1.0, simulatedElapsed / totalSceneDurationSec);
 
           // Typewriter word sync in exported frames
-          const speechProgress = Math.min(1.0, elapsed / speechDurationSec);
+          const speechProgress = Math.min(1.0, simulatedElapsed / speechDurationSec);
           this.activeWordIndex = Math.min(totalWords - 1, Math.floor(speechProgress * totalWords));
 
           let transitionAlpha = 0.0;
-          if (elapsed >= speechDurationSec) {
-            transitionAlpha = Math.min(1.0, (elapsed - speechDurationSec) / 0.4);
+          if (simulatedElapsed >= speechDurationSec) {
+            transitionAlpha = Math.min(1.0, (simulatedElapsed - speechDurationSec) / 0.4);
           }
 
           this._drawFrameWithTransitions(scene, progress, now, transitionAlpha);
 
           if (onProgress) {
             const overall = ((sceneIdx + progress) / totalScenes) * 100;
-            onProgress(Math.round(overall));
+            onProgress(Math.min(99, Math.round(overall)));
           }
 
           if (progress < 1.0) {
@@ -793,6 +892,14 @@ export class VideoCompositor {
 
         requestAnimationFrame(step);
       };
+
+      // Safety watchdog: ensure export always finishes within 90 seconds max
+      setTimeout(() => {
+        if (!resolved && recorder.state === 'recording') {
+          console.warn('[VideoCompositor] Watchdog auto-completing export');
+          try { recorder.requestData(); recorder.stop(); } catch(e) { finishExport(); }
+        }
+      }, 90000);
 
       renderNextScene();
     });

@@ -240,9 +240,25 @@ export default function ScreenAIFilmmaking({
                 onClick={() => setSelectedSceneIndex(idx)}
               >
                 <div className="card-thumb-mini">
-                  <img src={scene.imageUrl} alt={scene.title} />
+                  {scene.videoUrl ? (
+                    <video 
+                      src={scene.videoUrl} 
+                      muted 
+                      playsInline 
+                      loop 
+                      autoPlay 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                  ) : (
+                    <img src={scene.imageUrl} alt={scene.title} />
+                  )}
                   <span className="mini-badge">Shot {idx + 1}</span>
                   <span className="mini-duration">{scene.duration}s</span>
+                  {scene.videoUrl && (
+                    <span style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(16, 185, 129, 0.85)', color: '#fff', fontSize: '0.62rem', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
+                      ▶ Motion
+                    </span>
+                  )}
                 </div>
                 <div className="card-mini-content">
                   <h4 className="mini-title">{scene.title}</h4>
@@ -266,6 +282,10 @@ export default function ScreenAIFilmmaking({
               <span>Art Style:</span>
               <strong className="capitalize">{project.styleId || 'Cinematic'}</strong>
             </div>
+            <div className="summary-row">
+              <span>Video Engine:</span>
+              <strong style={{ color: '#10b981' }}>Option 2: Hybrid Real Moving Video</strong>
+            </div>
           </div>
         </div>
 
@@ -273,13 +293,25 @@ export default function ScreenAIFilmmaking({
         <div className="scene-inspector glass-panel">
           {selectedScene && (
             <>
-              {/* Scene Visual Preview */}
+              {/* Scene Visual Preview: Real Moving Video or HD Keyframe */}
               <div className="inspector-preview-wrapper">
-                <img 
-                  src={selectedScene.imageUrl} 
-                  alt={selectedScene.title} 
-                  className="inspector-image"
-                />
+                {selectedScene.videoUrl ? (
+                  <video 
+                    src={selectedScene.videoUrl}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="inspector-image"
+                    style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                  />
+                ) : (
+                  <img 
+                    src={selectedScene.imageUrl} 
+                    alt={selectedScene.title} 
+                    className="inspector-image"
+                  />
+                )}
                 
                 <div className="preview-floating-tags">
                   <span className="badge badge-gold">

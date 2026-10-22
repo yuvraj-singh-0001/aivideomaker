@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Film, Clapperboard, FolderKanban, PenTool, Sparkles, Video, Volume2, VolumeX, Smartphone } from 'lucide-react';
+import { Film, Clapperboard, FolderKanban, PenTool, Sparkles, Video, Volume2, VolumeX, Smartphone, Cpu } from 'lucide-react';
 import { audioEngine } from '../services/audioEngine';
 import MobileApiModal from './MobileApiModal';
+import VideoEngineModal from './VideoEngineModal';
 
 export default function Navbar({ currentScreen, setScreen, activeProject, onNewProjectClick }) {
   const [isPlayingAudioPreview, setIsPlayingAudioPreview] = useState(false);
   const [showApiModal, setShowApiModal] = useState(false);
+  const [showEngineModal, setShowEngineModal] = useState(false);
 
   const toggleAudioPreview = () => {
     if (isPlayingAudioPreview) {
@@ -64,6 +66,17 @@ export default function Navbar({ currentScreen, setScreen, activeProject, onNewP
 
           {/* Action Controls */}
           <div className="navbar-actions">
+            {/* Video Engine Settings (Option 2) */}
+            <button 
+              className="btn btn-secondary btn-sm"
+              onClick={() => setShowEngineModal(true)}
+              title="AI Video Engine Settings (Option 2: Hybrid Moving Video & Wan 2.1)"
+              style={{ border: '1px solid rgba(245, 158, 11, 0.4)' }}
+            >
+              <Cpu size={16} className="text-gold" />
+              <span>Video Engine ⚡</span>
+            </button>
+
             {/* Mobile API Hub Button */}
             <button 
               className="btn btn-secondary btn-sm"
@@ -90,6 +103,12 @@ export default function Navbar({ currentScreen, setScreen, activeProject, onNewP
           </div>
         </div>
       </header>
+
+      {/* Video Engine Modal (Option 2) */}
+      <VideoEngineModal 
+        isOpen={showEngineModal}
+        onClose={() => setShowEngineModal(false)}
+      />
 
       {/* Mobile API Docs Modal */}
       <MobileApiModal 

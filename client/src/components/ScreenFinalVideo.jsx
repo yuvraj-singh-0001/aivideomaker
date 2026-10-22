@@ -309,9 +309,21 @@ export default function ScreenFinalVideo({
             </button>
 
             {downloadUrl && (
-              <div className="download-success-banner mt-3">
-                <CheckCircle2 size={16} color="#10b981" />
-                <span>Export Complete! ({downloadFilename})</span>
+              <div className="download-success-box mt-3" style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#10b981', fontWeight: 600 }}>
+                  <CheckCircle2 size={18} color="#10b981" />
+                  <span>Movie Exported Successfully!</span>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: '6px 0 10px 0' }}>{downloadFilename}</p>
+                <a 
+                  href={downloadUrl} 
+                  download={downloadFilename}
+                  className="btn btn-primary btn-block"
+                  style={{ background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', textDecoration: 'none' }}
+                >
+                  <Download size={18} />
+                  <span>Save Video File to Device</span>
+                </a>
               </div>
             )}
           </div>
