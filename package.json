@@ -1,0 +1,14 @@
+{
+  "name": "videomakers-cinematic-ai",
+  "version": "1.0.0",
+  "description": "1-Click AI Hindi/Hinglish/English Story to Cinematic Video Maker",
+  "scripts": {
+    "start": "node start.js",
+    "dev": "node start.js",
+    "server": "cd server && node index.js",
+    "client": "cd client && npm run dev"
+  },
+  "keywords": ["ai-video", "cinema", "story-to-video", "hindi-ai", "filmmaker"],
+  "author": "",
+  "license": "ISC"
+}
